@@ -1,13 +1,21 @@
-FROM node:22-alpine
+FROM node:20 AS build
 
-USER node
-WORKDIR /opt/openflow
+WORKDIR /app
 
-COPY --chown=node:node package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+COPY package*.json ./
+RUN npm install
 
-COPY --chown=node:node . .
+COPY . .
+RUN npm run build
+
+FROM node:20 AS production
+
+WORKDIR /app
+
+RUN npm install -g serve
+
+COPY --from=build /app/build ./build
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["serve", "-s", "build", "-l", "3000"]
